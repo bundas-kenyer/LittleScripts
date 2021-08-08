@@ -5,26 +5,20 @@ from time import sleep
 
 class WowKeySpam():
     key_spammed=None
-    key_wanted=None
+    key_mod_spammed=None
     count=0
-    exceptkeys="wasdcvmploykj"
+
+    exceptkeys= set([keyboard.KeyCode.from_char(c) for c in "wasdcvmploykj"])
+    validkeys=(set([keyboard.KeyCode.from_char(chr(c)) for c in range(ord('0'),ord('9')+1)]+
+        [keyboard.KeyCode.from_char(chr(c)) for c in range(ord('a'),ord('z')+1) if keyboard.KeyCode.from_char(chr(c))]))
 
     switch_main=True
     switch_running=False
 
-    flag_run=False
-    flag_listener=False
-
     listener=None
-
 
     #Listener related methods
     def listenerstart(self):
-        temp_expkeys=[]
-        for i in range(len(self.exceptkeys)):
-            temp_expkeys.append(None)
-            temp_expkeys[i]=keyboard.KeyCode().from_char(self.exceptkeys[i])
-        self.exceptkeys=temp_expkeys
         self.listener=keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
         self.listener.start()
 
@@ -33,26 +27,26 @@ class WowKeySpam():
         keyboard.Key.shift_r, keyboard.Key.ctrl_r, keyboard.Key.alt_gr,
         keyboard.Key.space, keyboard.Key.esc, keyboard.Key.caps_lock, keyboard.Key.tab, keyboard.Key.enter])
 
-
     def on_press(self, key):
-        #print(key)
-        
-        if self.not_mod(key) and key not in self.exceptkeys and key!=self.key_spammed and (self.count>3 or self.key_spammed==None or self.switch_running==False):
+        if (self.not_mod(key) and key not in self.exceptkeys and key in self.validkeys and key!=self.key_spammed and
+            (self.count>3 or self.key_spammed==None or self.switch_running==False)):
             self.count=0
             self.key_spammed=key
-    
-        if key==keyboard.Key.shift_l:
+            self.key_mod_spammed=None
+        elif key==keyboard.Key.shift_l:
             if self.switch_main == False:
                 self.switch_main=True
                 self.switch_running=True
             else:
                 if self.switch_running==True:
                     self.switch_running=False
+                    self.key_mod_spammed=None
                 else:
                     self.switch_running=True
-                #print("SHIFT" + str(self.switch_running))
-        if key==keyboard.Key.enter:
+        elif key==keyboard.Key.enter:
             self.switch_main=False
+        elif key in [keyboard.Key.ctrl_l, keyboard.Key.alt_l] and self.key_mod_spammed not in [keyboard.Key.ctrl_l, keyboard.Key.alt_l]:
+            self.key_mod_spammed=key
 
     def on_release(self, key):
         pass
@@ -61,21 +55,17 @@ class WowKeySpam():
     def run(self):
         self.listenerstart()
         while True:
+            kms=self.key_mod_spammed
             if self.switch_main and self.switch_running and self.key_spammed!=None:
-                keyboard.Controller().tap(self.key_spammed)
-                #print(self.key_spammed)
+                if kms!=None:
+                    keyboard.Controller().press(kms)
+                    keyboard.Controller().press(self.key_spammed)
+                    keyboard.Controller().release(self.key_spammed)
+                    keyboard.Controller().release(kms)
+                else:
+                    keyboard.Controller().tap(self.key_spammed)
                 if self.count<300:
                     self.count+=1
-            
             sleep(0.01)
 
 WowKeySpam().run()
-
-
-
-
-
-
-
-
-
